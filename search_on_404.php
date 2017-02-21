@@ -2,7 +2,7 @@
 /**
  * Redirect on 404
  *
- *For use on 404 'file not found' pages. Searches for possibly related images or albums based on the current URL
+ * For use on 404 'file not found' pages. Searches for possibly related images or albums based on the current URL
  *
  * @author Marcus Wong (wongm)
  * @package plugins
@@ -11,7 +11,7 @@
 $plugin_description = gettext("For use on 404 'file not found' pages. Searches for possibly related images or albums based on the current URL.");
 $plugin_author = "Marcus Wong (wongm)";
 $plugin_version = '1.0.0'; 
-$plugin_URL = "http://code.google.com/p/wongm-zenphoto-plugins/";
+$plugin_URL = "https://github.com/wongm/zenphoto-404-helpers/";
 
 function searchOn404() {
 	global $_zp_current_search, $_zp_current_album;

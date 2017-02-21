@@ -11,7 +11,7 @@
 $plugin_description = gettext("Redirects the browser to the correct image or album if a matching item is found in the database. Requires all gallery items to have unique album folder names and unique image filenames.");
 $plugin_author = "Marcus Wong (wongm)";
 $plugin_version = '1.0.0'; 
-$plugin_URL = "http://code.google.com/p/wongm-zenphoto-plugins/";
+$plugin_URL = "https://github.com/wongm/zenphoto-404-helpers/";
 
 function redirectOn404() {
 	redirectToCachedImageOn404();
