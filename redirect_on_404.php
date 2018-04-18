@@ -14,9 +14,51 @@ $plugin_version = '1.0.0';
 $plugin_URL = "https://github.com/wongm/zenphoto-404-helpers/";
 
 function redirectOn404() {
+	redirectToAlbumImageOn404();
 	redirectToCachedImageOn404();
 	redirectToImagePageOn404();
 	redirectToAlbumOn404();
+}
+
+/*
+ * trying to access album image but it doesn't exist
+ * eg: /album/buses/E100_48230.jpg
+ * search other albums for this image
+ */
+function redirectToAlbumImageOn404() {
+	// load global variables from Zenphoto's index.php
+	global $album, $image;
+	
+	if (strtolower(substr($album, 0, 6)) == 'albums') {
+		
+	    $requestBits = explode('/', $album);
+		// make sure we are accessing an image
+		if (sizeof($requestBits) >= 3) {
+    		$imageFilename = $requestBits[sizeof($requestBits)-1];
+			// query the DB to find any images with the EXACT same filename as requested
+			$searchSql = "SELECT folder, filename FROM " . prefix('images') . " i INNER JOIN " . 
+					prefix('albums') . " a ON i.albumid = a.id WHERE i.filename = " . 
+					db_quote($imageFilename) . "";	
+			
+			$searchResult = query_full_array($searchSql);
+			
+			// if single result is returned, then we have a match!
+			if (sizeof($searchResult) == 1) {
+	
+				// fix for some "query_full_array()" differences (on some Zenphoto versions?)
+				if (sizeof($searchResult[0]) > 1) {
+					$searchResult = $searchResult[0];
+				}
+				
+				// build up the URL to redirect to
+				$location = "/albums/" . $searchResult["folder"] . "/" . $searchResult["filename"];
+				// redirect the browser
+				status_header(301);
+				header("Location: $location");
+				die();
+			}
+		}
+	}
 }
 
 /*
