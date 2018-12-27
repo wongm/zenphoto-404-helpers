@@ -103,6 +103,8 @@ function redirectToCachedImageOn404() {
 			if (strlen($album) > 0 && strlen($filenameToCheck) > 0) {
 				$location = sprintf(FULLWEBPATH . "/zp-core/i.php?a=%s&i=%s&s=%s", $album, $filenameToCheck, $imagesize);
 				status_header(302);
+				header("Cache-Control: no-cache"); //HTTP 1.1
+				header("Pragma: no-cache"); //HTTP 1.0
 				header("Location: $location");
 				die();
 			}
