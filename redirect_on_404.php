@@ -13,7 +13,7 @@ $plugin_author = "Marcus Wong (wongm)";
 $plugin_version = '1.0.0'; 
 $plugin_URL = "https://github.com/wongm/zenphoto-404-helpers/";
 
-function redirectOn404() {
+function redirectOn404() {	
 	redirectToAlbumImageOn404();
 	redirectToCachedImageOn404();
 	redirectToImagePageOn404();
@@ -27,24 +27,24 @@ function redirectOn404() {
  */
 function redirectToAlbumImageOn404() {
 	// load global variables from Zenphoto's index.php
-	global $album, $image;
+	global $_GET, $_zp_db;
 	
-	if (strtolower(substr($album, 0, 6)) == 'albums') {
+	if (strtolower(substr($_GET['album'], 0, 6)) == 'albums') {
 		
-	    $requestBits = explode('/', $album);
+		$requestBits = explode('/', $_GET['album']);
 		// make sure we are accessing an image
 		if (sizeof($requestBits) >= 3) {
-    		$imageFilename = $requestBits[sizeof($requestBits)-1];
+			$imageFilename = $requestBits[sizeof($requestBits)-1];
 			// query the DB to find any images with the EXACT same filename as requested
-			$searchSql = "SELECT folder, filename FROM " . prefix('images') . " i INNER JOIN " . 
-					prefix('albums') . " a ON i.albumid = a.id WHERE i.filename = " . 
-					db_quote($imageFilename) . "";	
-			
-			$searchResult = query_full_array($searchSql);
+			$searchSql = "SELECT folder, filename FROM " . $_zp_db->prefix('images') . " i INNER JOIN " . 
+					$_zp_db->prefix('albums') . " a ON i.albumid = a.id WHERE i.filename = " . 
+					$_zp_db->quote($imageFilename) . "";
+
+			$searchResult = $_zp_db->queryFullArray($searchSql);
 			
 			// if single result is returned, then we have a match!
 			if (sizeof($searchResult) == 1) {
-	
+
 				// fix for some "query_full_array()" differences (on some Zenphoto versions?)
 				if (sizeof($searchResult[0]) > 1) {
 					$searchResult = $searchResult[0];
@@ -69,18 +69,18 @@ function redirectToAlbumImageOn404() {
  */
 function redirectToCachedImageOn404() {
 	// load global variables from Zenphoto's index.php
-	global $album, $image;
+	global $_GET;
 	
-	if (strtolower(substr($album, 0, 5)) == 'cache') {
+	if (strtolower(substr($_GET['album'], 0, 5)) == 'cache') {
 		
 		// convert Zenphoto params into something useful!
-		$filenameToCheck = str_replace(dirname($album), "", basename($album));
+		$filenameToCheck = str_replace(dirname($_GET['album']), "", basename($_GET['album']));
 		
 		// check for '_thumb' at the end of the URL - take note, then remove
 		$isThumb = (strtolower(substr($filenameToCheck, (strlen(stripSuffix($filenameToCheck)) - 6), 6)) == '_thumb');
 		
 		// clean up album URL
-		$album = str_replace("cache/", "", dirname($album));
+		$_GET['album'] = str_replace("cache/", "", dirname($_GET['album']));
 		
 		// try to find the image size
 		$imagesize = null;
@@ -88,7 +88,7 @@ function redirectToCachedImageOn404() {
 		
 		// separate the image size from file extension
 		$imageparams = explode(".", $imageparams[sizeof($imageparams) - 1]);
-		if (in_array(getSuffix($image), array('jpg','jpeg','gif','png'))) {
+		if (array_key_exists('image', $_GET) && in_array(getSuffix($_GET['image']), array('jpg','jpeg','gif','png'))) {
 			$imagesize = $imageparams[0];
 			// cleanup filename to get base image
 			$filenameToCheck = str_replace("_" . $imagesize, "", $filenameToCheck);
@@ -100,10 +100,10 @@ function redirectToCachedImageOn404() {
 				$imagesize = 'thumb';
 			}
 				
-			if (strlen($album) > 0 && strlen($filenameToCheck) > 0) {
-				$location = sprintf(FULLWEBPATH . "/zp-core/i.php?a=%s&i=%s&s=%s", $album, $filenameToCheck, $imagesize);
+			if (strlen($_GET['album']) > 0 && strlen($filenameToCheck) > 0) {
+				$location = sprintf(FULLWEBPATH . "/zp-core/i.php?a=%s&i=%s&s=%s", $_GET['album'], $filenameToCheck, $imagesize);
 				status_header(302);
-				header("Cache-Control: no-cache"); //HTTP 1.1
+				header("Cache-Control: no-cache, must-revalidate"); //HTTP 1.1
 				header("Pragma: no-cache"); //HTTP 1.0
 				header("Location: $location");
 				die();
@@ -114,48 +114,52 @@ function redirectToCachedImageOn404() {
 
 function redirectToImagePageOn404() {
 	// load global variables from Zenphoto's index.php
-	global $image;
-	
+	global $_GET, $_zp_db;
+
 	// make sure we are accessing an image
-	if ($image != '') {
-		// query the DB to find any images with the EXACT same filename as requested
-		$searchSql = "SELECT folder, filename FROM " . prefix('images') . " i INNER JOIN " . 
-				prefix('albums') . " a ON i.albumid = a.id WHERE i.filename = " . 
-				db_quote($image) . "";
-		
-		$searchResult = query_full_array($searchSql);
-		
-		// if single result is returned, then we have a match!
-		if (sizeof($searchResult) == 1) {
-			// fix for some "query_full_array()" differences (on some Zenphoto versions?)
-			if (sizeof($searchResult[0]) > 1) {
-				$searchResult = $searchResult[0];
+	if (array_key_exists('image', $_GET)) {
+		if ($_GET['image'] != '') {
+			// query the DB to find any images with the EXACT same filename as requested
+			$searchSql = "SELECT folder, filename FROM " . $_zp_db->prefix('images') . " i INNER JOIN " . 
+					$_zp_db->prefix('albums') . " a ON i.albumid = a.id WHERE i.filename = " . 
+					$_zp_db->quote($_GET['image']) . "";
+			
+			$searchResult = $_zp_db->queryFullArray($searchSql);
+			
+			// if single result is returned, then we have a match!
+			if (sizeof($searchResult) == 1) {
+				// fix for some "query_full_array()" differences (on some Zenphoto versions?)
+				if (sizeof($searchResult[0]) > 1) {
+					$searchResult = $searchResult[0];
+				}
+				
+				// build up the URL to redirect to
+				$location = rewrite_path("/" . $searchResult["folder"] . "/" . $searchResult["filename"] . IM_SUFFIX, "/index.php?album=" . $searchResult["folder"] . "&image=" . $searchResult["filename"]);
+				
+				// redirect the browser
+				status_header(301);
+				header("Location: $location");
+				die();
 			}
-			
-			// build up the URL to redirect to
-			$location = rewrite_path("/" . $searchResult["folder"] . "/" . $searchResult["filename"] . IM_SUFFIX,
-										"/index.php?album=" . $searchResult["folder"] . "&image=" . $searchResult["filename"]);
-			
-			// redirect the browser
-			status_header(301);
-			header("Location: $location");
-			die();
 		}
 	}
 }
 
 function redirectToAlbumOn404()
 {
+	global $_GET, $_zp_db;	
+	$album = '';
+	
 	// default Zenphoto behaviour does not return bottom level folder
-	if (getOption('mod_rewrite') AND isset($_GET['album'])) {
+	if (getOption('mod_rewrite') AND array_key_exists('album', $_GET)) {
 		$album = urldecode(sanitize($_GET['album'], 0));
 		//strip trailing slashes
-		if (substr($album, -1, 1) == '/') {
-			$album = substr($album, 0, strlen($album)-1);
+		if (substr($_GET['album'], -1, 1) == '/') {
+			$album = substr($_GET['album'], 0, strlen($_GET['album'])-1);
 		}
 	// load global variables from Zenphoto's index.php
 	} else {
-		global $album;
+		$album = $_GET['album'];
 	}
 	
 	$albumbits = explode('/', $album);
@@ -167,11 +171,11 @@ function redirectToAlbumOn404()
 		// query the DB to find any albums with same folder name
 		// NOTE: albums contain the entire folder path 
 		// we only want to look at the bottom level of the hierarchy
-		$searchSql = "SELECT folder FROM " . prefix('albums') . " a WHERE a.folder LIKE " . 
-				db_quote('%'.$albumFolderToSearchFor) . " OR a.folder = " . 
-				db_quote($albumFolderToSearchFor) . "";
+		$searchSql = "SELECT folder FROM " . $_zp_db->prefix('albums') . " a WHERE a.folder LIKE " . 
+				$_zp_db->quote('%'.$albumFolderToSearchFor) . " OR a.folder = " . 
+				$_zp_db->quote($albumFolderToSearchFor) . "";
 		
-		$searchResult = query_full_array($searchSql);
+		$searchResult = $_zp_db->queryFullArray($searchSql);
 		
 		// if single result is returned, then we have a match!
 		if (sizeof($searchResult) == 1)  {
@@ -181,14 +185,13 @@ function redirectToAlbumOn404()
 			}
 			
 			// build up the URL to redirect to
-			$location = rewrite_path("/" . $searchResult["folder"] . "/",
-										"/index.php?album=" . $searchResult["folder"]);
+			$location = rewrite_path("/" . $searchResult["folder"] . "/", "/index.php?album=" . $searchResult["folder"]);
 			
 			// redirect the browser
 			status_header(301);
 			header("Location: $location");
 			die();
-		}		
+		}
 	}
 }
 

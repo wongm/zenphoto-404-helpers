@@ -17,41 +17,37 @@ function searchOn404() {
 	global $_zp_current_search, $_zp_current_album;
 	
 	// load the search in controller.php
-	zp_load_search();
+	$_zp_current_search = new SearchEngine();
 	
 	// reset the search values with what was entered in the URL
-	$_zp_current_search->setSearchParams("&words=" . getSearchTermFrom404());
+	$_zp_current_search->setSearchParams("s=" . getSearchTermFrom404());
 	
 	// reset album 
 	// so we look at images in search, not in the (invalid) album
-	$_zp_current_album = null;
+	$_zp_current_album = null;	
+	add_context(ZP_SEARCH);	
 }
 
 function wasLookingForImage() {
-	global $image, $album;
+	global $_GET;
 	
-	if (isset($image) AND $image != '') 
-    {
-    	return true;
-    }
-    
-    return false;
+	if (array_key_exists('image', $_GET) AND $_GET['image'] != '') 
+	{
+		return true;
+	}
+	
+	return false;
 }
 
 function getSearchTermFrom404() {
-	global $image, $album;
+	global $_GET;
 	
 	$term = '';
 	
-	if (basename($album) != $album)
-	{
-    	$image = basename($album);
-	}
-	
 	// get the image and album values from index.php
-	if (isset($image) AND $image != '') 
+	if (array_key_exists('image', $_GET) AND $_GET['image'] != '') 
 	{
-		$term = $image;
+		$term = $_GET['image'];
 		
 		// remove common file extensions
 		$extensions = array('.html', '.htm', '.php', '.jpg', '.jpeg', '.gif', '.png');
@@ -65,9 +61,9 @@ function getSearchTermFrom404() {
 		// will cause search to look at all terms
 		$term  = str_replace(".", ',', strtolower($term));
 	}
-	else if (isset($album)) 
+	else if (array_key_exists('album', $_GET)) 
 	{
-		$term = $album;
+		$term = $_GET['album'];
 	}
 	
 	return $term;
