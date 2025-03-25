@@ -29,7 +29,7 @@ function redirectToAlbumImageOn404() {
 	// load global variables from Zenphoto's index.php
 	global $_GET, $_zp_db;
 	
-	if (strtolower(substr($_GET['album'], 0, 6)) == 'albums') {
+	if (isset($_GET['album']) && strtolower(substr($_GET['album'], 0, 6)) == 'albums') {
 		
 		$requestBits = explode('/', $_GET['album']);
 		// make sure we are accessing an image
@@ -71,7 +71,7 @@ function redirectToCachedImageOn404() {
 	// load global variables from Zenphoto's index.php
 	global $_GET;
 	
-	if (strtolower(substr($_GET['album'], 0, 5)) == 'cache') {
+	if (isset($_GET['album']) && strtolower(substr($_GET['album'], 0, 5)) == 'cache') {
 		
 		// convert Zenphoto params into something useful!
 		$filenameToCheck = str_replace(dirname($_GET['album']), "", basename($_GET['album']));
@@ -159,7 +159,9 @@ function redirectToAlbumOn404()
 		}
 	// load global variables from Zenphoto's index.php
 	} else {
-		$album = $_GET['album'];
+		if (isset($_GET['album'])) {
+			$album = $_GET['album'];
+		}
 	}
 	
 	$albumbits = explode('/', $album);
