@@ -13,7 +13,7 @@ $plugin_author = "Marcus Wong (wongm)";
 $plugin_version = '1.0.0'; 
 $plugin_URL = "https://github.com/wongm/zenphoto-404-helpers/";
 
-function redirectOn404() {	
+function redirectOn404() {
 	redirectToAlbumImageOn404();
 	redirectToCachedImageOn404();
 	redirectToImagePageOn404();
@@ -69,18 +69,17 @@ function redirectToAlbumImageOn404() {
  */
 function redirectToCachedImageOn404() {
 	// load global variables from Zenphoto's index.php
-	global $_GET;
+	global $_GET;	
 	
 	if (isset($_GET['album']) && strtolower(substr($_GET['album'], 0, 5)) == 'cache') {
-		
 		// convert Zenphoto params into something useful!
-		$filenameToCheck = str_replace(dirname($_GET['album']), "", basename($_GET['album']));
+		$filenameToCheck = basename($_GET['album']);
 		
 		// check for '_thumb' at the end of the URL - take note, then remove
 		$isThumb = (strtolower(substr($filenameToCheck, (strlen(stripSuffix($filenameToCheck)) - 6), 6)) == '_thumb');
 		
 		// clean up album URL
-		$_GET['album'] = str_replace("cache/", "", dirname($_GET['album']));
+		$album = str_replace("cache/", "", dirname($_GET['album']));
 		
 		// try to find the image size
 		$imagesize = null;
@@ -88,7 +87,8 @@ function redirectToCachedImageOn404() {
 		
 		// separate the image size from file extension
 		$imageparams = explode(".", $imageparams[sizeof($imageparams) - 1]);
-		if (array_key_exists('image', $_GET) && in_array(getSuffix($_GET['image']), array('jpg','jpeg','gif','png'))) {
+		
+		if (in_array(getSuffix($filenameToCheck), array('jpg','jpeg','gif','png'))) {
 			$imagesize = $imageparams[0];
 			// cleanup filename to get base image
 			$filenameToCheck = str_replace("_" . $imagesize, "", $filenameToCheck);
@@ -101,7 +101,8 @@ function redirectToCachedImageOn404() {
 			}
 				
 			if (strlen($_GET['album']) > 0 && strlen($filenameToCheck) > 0) {
-				$location = sprintf(FULLWEBPATH . "/zp-core/i.php?a=%s&i=%s&s=%s", $_GET['album'], $filenameToCheck, $imagesize);
+				//$location = sprintf(FULLWEBPATH . "/zp-core/i.php?a=%s&i=%s&s=%s", $album, $filenameToCheck, $imagesize);
+				$location = sprintf(FULLWEBPATH . "/zp-core/i.php?a=%s&i=%s", $album, $filenameToCheck);
 				status_header(302);
 				header("Cache-Control: no-cache, must-revalidate"); //HTTP 1.1
 				header("Pragma: no-cache"); //HTTP 1.0
@@ -117,12 +118,25 @@ function redirectToImagePageOn404() {
 	global $_GET, $_zp_db;
 
 	// make sure we are accessing an image
-	if (array_key_exists('image', $_GET)) {
-		if ($_GET['image'] != '') {
+	if (array_key_exists('album', $_GET)) {
+		if ($_GET['album'] != '') {
+			if (array_key_exists('image', $_GET)) {
+				if ($_GET['image'] != '') {
+					$image = $_GET['image'];
+				}
+			} else {
+				$image = str_replace(".html", "", basename($_GET['album']));
+				$ext = pathinfo($image, PATHINFO_EXTENSION);
+				if ($ext == '') {
+					$image .= ".jpg";
+				}
+			}
+			echo $image;
+			
 			// query the DB to find any images with the EXACT same filename as requested
 			$searchSql = "SELECT folder, filename FROM " . $_zp_db->prefix('images') . " i INNER JOIN " . 
 					$_zp_db->prefix('albums') . " a ON i.albumid = a.id WHERE i.filename = " . 
-					$_zp_db->quote($_GET['image']) . "";
+					$_zp_db->quote($image) . "";
 			
 			$searchResult = $_zp_db->queryFullArray($searchSql);
 			
